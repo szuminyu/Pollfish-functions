@@ -9,15 +9,15 @@
 
 
 
-read_pollfish_file <- function(enter_file){
+read_pollfish_file = function(enter_file){
   
   ##This sheet contains income
-  x <- readxl::read_excel(enter_file, sheet = "Individuals") %>%
+  individuals = readxl::read_excel(enter_file, sheet = "Individuals") %>%
     dplyr::select(ID,`Income`) %>%
     magrittr::set_colnames(c("ID","income"))
   
   ##Fix income variable
-  x <- x %>% 
+  individuals = individuals %>% 
     dplyr::mutate(income = case_when(
                   income %in% c("prefer_not_to_say") ~ NA_character_,
                   income %in% c("lower_i", "lower_ii") ~ "Under 50K",
@@ -26,7 +26,7 @@ read_pollfish_file <- function(enter_file){
   ##This sheet contains regions
   library(noncensus)
   data('states')
-  regions <- states[, c('name','region')]
+  regions = states[, c('name','region')]
   
   ## Add Southwest category
   regions$region = as.character(regions$region)
@@ -37,32 +37,29 @@ read_pollfish_file <- function(enter_file){
   
   
   #Now we add merge the sheet with income and then with region
-  y <- readxl::read_excel(enter_file, sheet = "Individuals Coded") %>%
-    dplyr::inner_join(x, by = c("ID" = "ID")) %>%
+  individuals_coded = readxl::read_excel(enter_file, sheet = "Individuals Coded") %>%
+    dplyr::inner_join(individuals, by = c("ID" = "ID")) %>%
     dplyr::left_join(regions, by = c("Area" = "name"))
   
   ##Order region, income
-  y <- y %>% 
+  individuals_coded = individuals_coded %>% 
     dplyr::mutate(income = factor(income, levels = c("Under 50K", "Over 50K")),
-           region = factor(region, levels = c("South", "Northeast", "Midwest", "West", "Southwest")))
+           region = factor(region, levels = c("South", "Northeast", "Midwest", "West", "Southwest"))) %>%
+    dplyr::rename(Income = income,
+                  Region = region)
   
   ##Fix age and gender
-  y <- y %>% 
-    dplyr::rename(age = Age,
-                  gender = Gender) %>%
-    dplyr::mutate(age = case_when(
-      age == "> 54" ~ "Over 54",
-      TRUE ~ age
+  individuals_coded = individuals_coded %>% 
+    dplyr::mutate(Age = case_when(
+      Age == "> 54" ~ "Over 54",
+      TRUE ~ Age
     )) %>%
-    dplyr::mutate(age = factor(age, levels = c("18 - 24", "25 - 34","35 - 44","45 - 54", "Over 54"))) %>%
-    dplyr::mutate(gender = str_to_title(gender))
-    
-  y <- y %>%
-    dplyr::mutate_at(vars(matches("Q[1-9]{1,2}\\.*")),parse_number)
+    dplyr::mutate(Age = factor(Age, levels = c("18 - 24", "25 - 34","35 - 44","45 - 54", "Over 54"))) %>%
+    dplyr::mutate(Gender = str_to_title(Gender))
 
-  y <- y %>% 
-    dplyr::mutate(sample = "Sample")
+  individuals_coded = individuals_coded %>% 
+    dplyr::mutate(Sample = "Sample")
     
-  return(y)
+  return(individuals_coded)
 
 }

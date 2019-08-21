@@ -61,7 +61,7 @@ read_pollfish_file <- function(enter_file){
     dplyr::mutate_at(vars(matches("Q[1-9]{1,2}\\.*")),parse_number)
 
   y <- y %>% 
-    dplry::mutate(sample = "Sample")
+    dplyr::mutate(sample = "Sample")
     
   return(y)
 

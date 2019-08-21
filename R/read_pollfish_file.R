@@ -13,47 +13,55 @@ read_pollfish_file <- function(enter_file){
   
   ##This sheet contains income
   x <- readxl::read_excel(enter_file, sheet = "Individuals") %>%
-    select(ID,`Income`) %>%
+    dplyr::select(ID,`Income`) %>%
     magrittr::set_colnames(c("ID","income"))
   
   ##Fix income variable
-  x <- x %>% mutate(income = case_when(
+  x <- x %>% 
+    dplyr::mutate(income = case_when(
                   income %in% c("prefer_not_to_say") ~ NA_character_,
                   income %in% c("lower_i", "lower_ii") ~ "Under 50K",
                   TRUE ~ "Over 50K"))
   
   ##This sheet contains regions
-  regions <- fbinfo::pop_geo %>% 
-             select(state, region) %>%
-             mutate(region = ifelse(region == "Western Overseas", "West", region))
-    
+  library(noncensus)
+  data('states')
+  regions <- states[, c('name','region')]
+  
+  ## Add Southwest category
+  regions$region = as.character(regions$region)
+  regions$region[regions$name == 'Oklahoma'] = 'Southwest'
+  regions$region[regions$name == 'Texas'] = 'Southwest'
+  regions$region[regions$name == 'New Mexico'] = 'Southwest'
+  regions$region[regions$name == 'Arizona'] = 'Southwest'
   
   
   #Now we add merge the sheet with income and then with region
   y <- readxl::read_excel(enter_file, sheet = "Individuals Coded") %>%
-    inner_join(x, by = c("ID" = "ID")) %>%
-    left_join(regions, by = c("Area" = "state"))
+    dplyr::inner_join(x, by = c("ID" = "ID")) %>%
+    dplyr::left_join(regions, by = c("Area" = "name"))
   
   ##Order region, income
   y <- y %>% 
-    mutate(income = factor(income, levels = c("Under 50K", "Over 50K")),
+    dplyr::mutate(income = factor(income, levels = c("Under 50K", "Over 50K")),
            region = factor(region, levels = c("South", "Northeast", "Midwest", "West", "Southwest")))
   
   ##Fix age and gender
   y <- y %>% 
     dplyr::rename(age = Age,
                   gender = Gender) %>%
-    mutate(age = case_when(
+    dplyr::mutate(age = case_when(
       age == "> 54" ~ "Over 54",
       TRUE ~ age
     )) %>%
-    mutate(age = factor(age, levels = c("18 - 24", "25 - 34","35 - 44","45 - 54", "Over 54"))) %>%
-    mutate(gender = str_to_title(gender))
+    dplyr::mutate(age = factor(age, levels = c("18 - 24", "25 - 34","35 - 44","45 - 54", "Over 54"))) %>%
+    dplyr::mutate(gender = str_to_title(gender))
     
   y <- y %>%
-    mutate_at(vars(matches("Q[1-9]{1,2}\\.*")),parse_number)
+    dplyr::mutate_at(vars(matches("Q[1-9]{1,2}\\.*")),parse_number)
 
-  y <- y %>% mutate(sample = "Sample")
+  y <- y %>% 
+    dplry::mutate(sample = "Sample")
     
   return(y)
 

@@ -23,8 +23,8 @@ multiple_crosstabs_by_variable <- function(d_frame1, multiple_choice_columns){
   names(c) <- multiple_choice_columns
   names(d) <- multiple_choice_columns
   
-  writexl::write_xlsx(a, "age_multiple_choice", ".xlsx")
-  writexl::write_xlsx(b, "income_multiple_choice", ".xlsx")
-  writexl::write_xlsx(c, "gender_multiple_choice", ".xlsx")
-  writexl::write_xlsx(d, "region_multiple_choice", ".xlsx")
+  writexl::write_xlsx(a, "age_multiple_choice.xlsx")
+  writexl::write_xlsx(b, "income_multiple_choice.xlsx")
+  writexl::write_xlsx(c, "gender_multiple_choice.xlsx")
+  writexl::write_xlsx(d, "region_multiple_choice.xlsx")
 }

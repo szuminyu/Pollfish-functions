@@ -90,6 +90,7 @@ single_crosstab <- function(d_frame, x_var, y_var){
   return(df)
   
 }
+#from Harro
 single_crosstabs_by_variable <- function(d_frame1, x_var1,single_choice_columns){
   z <- lapply(single_choice_columns, function(i)single_crosstab(d_frame1, x_var = x_var1, y_var = i))
   names(z) <- single_choice_columns

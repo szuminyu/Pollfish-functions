@@ -41,11 +41,9 @@ age_multiple_question <- function(dataframe, y_var){
     dplyr::mutate_if(is_double, ~scales::percent(.,accuracy = .1)) %>%
     dplyr::select_at(dplyr::vars(dplyr::matches('Q[1-9]\\.*')), function(i)stringr::str_extract(i, pattern = '(?<=\\.)\\d*'))  %>%
     tidyr::drop_na()
-
+  
   return(df)
 }
-
-
 income_multiple_question <- function(dataframe, y_var){
   y_var_sym = rlang::sym(y_var)
   ## Get age category numbers
@@ -75,8 +73,6 @@ income_multiple_question <- function(dataframe, y_var){
   
   return(df)
 }
-
-
 gender_multiple_question <- function(dataframe, y_var){
   y_var_sym = rlang::sym(y_var)
   ## Get age category numbers
@@ -106,7 +102,6 @@ gender_multiple_question <- function(dataframe, y_var){
   
   return(df)
 }
-
 region_multiple_question <- function(dataframe, y_var){
   y_var_sym = rlang::sym(y_var)
   ## Get age category numbers
@@ -139,5 +134,3 @@ region_multiple_question <- function(dataframe, y_var){
   
   return(df)
 }
-
-

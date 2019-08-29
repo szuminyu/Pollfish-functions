@@ -11,6 +11,7 @@ create_map <- function(appendix_file){
   library(tidyverse);library(readxl);library(urbnmapr)
   x <- read_excel(appendix_file, sheet = "states_for_map")
   
+  
   k <- urbnmapr::states %>%
     inner_join(x, by = c("state_name" = "state")) %>%
     ggplot(aes(long, lat, group = group, fill = region)) + 
@@ -29,7 +30,7 @@ create_map <- function(appendix_file){
     scale_fill_manual(values = c("royalblue3", "darkorange2", "firebrick2", "darkslategray3","forestgreen", "darkorchid3")) + 
     guides(fill = guide_legend(title = "Region\n", title.position = "top", 
                                title.hjust = 0.5)) + 
-    geom_text(data = get_urbn_labels(map = "states") %>% inner_join(x, by = c("state_name" = "state")) %>%
+    geom_text(data = urbnmapr::get_urbn_labels(map = "states") %>% inner_join(x, by = c("state_name" = "state")) %>%
                 mutate(for_label = ifelse(state_abbv %in% c("MD", "DE","NJ","CT","RI","MA","ME","NH","VT", "DC","HI","AK"),state_abbv, "")) %>%
                 mutate(label = ifelse(for_label == "",n, paste0(for_label,"-",n))), aes(x = long, lat, label = label), 
               size = 3.9, inherit.aes = FALSE, fontface = "bold", color = "black")

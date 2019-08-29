@@ -9,7 +9,7 @@
 #' @examples
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
 #' multiple_choice <- c("Q2", "Q9")
-#' multiple_crosstabs_by_variable(x,"Region", multiple_choice)
+#' multiple_crosstabs_by_variable(x,multiple_choice)
 
 multiple_crosstabs_by_variable <- function(d_frame1, multiple_choice_columns){
   

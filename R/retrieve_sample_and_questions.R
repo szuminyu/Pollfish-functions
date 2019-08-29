@@ -17,38 +17,36 @@
 #' retrieve_sample_and_questions("Pollfish_Survey.xls",single_choice,rank = FALSE, "single")
 
 
-
-
 retrieve_sample_and_questions <- function(pollfish_file, column_names,rank=FALSE,prefix_for_file){
   
   ##Function to get rid of parentheses
-  remove_parentheses <- function(x){str_trim(str_remove_all(x,"\\(.*\\)"))}
+  remove_parentheses <- function(x){stringr::str_trim(stringr::str_remove_all(x,"\\(.*\\)"))}
   
   
   ##Sample totals
   work_sheets <- column_names
-  work_sheets <- unlist(str_extract_all(work_sheets, "Q[0-9]{1,2}.*"))
+  work_sheets <- unlist(stringr::str_extract_all(work_sheets, "Q[0-9]{1,2}.*"))
   sample_answers <- lapply(work_sheets, function(i)readxl::read_excel(pollfish_file, sheet = i, skip = 1) %>%
-                             select(-matches("Respondents")) %>%
-                             rename_all(remove_parentheses))
+                             dplyr::select(-matches("Respondents")) %>%
+                             dplyr::rename_all(remove_parentheses))
   
   if(rank == FALSE){
-    sample_answers <- lapply(sample_answers, function(i) i %>% mutate(row = row_number(),
+    sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers),
                                                                       Percent = scales::percent(Percent,accuracy = .1)) %>%
-                               select(-row))
+                                                                dplyr::select(-row))
     
   }else{
-    sample_answers <- lapply(sample_answers, function(i) i %>% mutate(row = row_number(),
+    sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers)) %>%
-                               select(-row))
+                                                                dplyr::select(-row))
   }
   names(sample_answers) <- column_names
   writexl::write_xlsx(sample_answers, paste0(prefix_for_file, "_sample_answers.xlsx"))
   
   ###
   questions <- sapply(work_sheets, function(i)readxl::read_excel(pollfish_file, sheet = i) %>% 
-                        select(matches('[a-zA-Z]')) %>%
+                        dplyr::select(matches('[a-zA-Z]')) %>%
                         colnames())
   
   questions = dplyr::tibble(code = column_names, text = rtweet::plain_tweets(questions)) %>%

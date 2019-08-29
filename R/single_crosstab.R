@@ -10,7 +10,6 @@
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
 #' single_crosstab(x, "Age", "Q4")
 
-
 single_crosstab <- function(d_frame, x_var, y_var){
   x_var_sym = rlang::sym(x_var)
   y_var_sym = rlang::sym(y_var)

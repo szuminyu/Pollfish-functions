@@ -10,32 +10,35 @@
 
 
 create_appendix_and_map <- function(pollfish_file){
-  x <- pollfishFunctions::read_pollfish_file(pollfish_file)
+  x <- read_pollfish_file(pollfish_file)
   
   
   ##Worksheets for appendix file
-  states <- count(x, Area, region) %>%
-    mutate(region = ifelse(is.na(region), "Northeast", parse_character(region))) %>%
-    mutate(n = scales::comma(n)) %>%
+  states <- dplyr::count(x, Area, Region) %>%
+    dplyr::mutate(n = scales::comma(n)) %>%
     magrittr::set_colnames(c("state","region", "n"))
   
   
-  region <- count(x, region) %>% mutate(region = ifelse(is.na(region), "Missing", parse_character(region))) %>%
-    mutate(percent = scales::percent(n/sum(n)),
-           n = scales::comma(n)) %>%
+  region <- x %>%
+    dplyr::count(Region) %>%
+    dplyr::mutate(Region = dplyr::case_when(is.na(as.character(Region)) ~'Missing', TRUE ~as.character(Region))) %>%
+    dplyr::mutate(percent = scales::percent(n/sum(n)),
+                  n = scales::comma(n)) %>%
     magrittr::set_colnames(c("Region","Total", "Percent"))
   
-  age <- count(x, age) %>% mutate(percent = scales::percent(n/sum(n)),
-                                  n = scales::comma(n)) %>%
+  age <- dplyr::count(x, Age) %>% 
+    dplyr::mutate(percent = scales::percent(n/sum(n)), n = scales::comma(n)) %>%
     magrittr::set_colnames(c("Age","Total", "Percent"))
   
-  gender <- count(x, gender) %>% mutate(percent = scales::percent(n/sum(n)),
-                                        n = scales::comma(n)) %>%
+  gender <- dplyr::count(x, Gender) %>% 
+    dplyr::mutate(percent = scales::percent(n/sum(n)),n = scales::comma(n)) %>%
     magrittr::set_colnames(c("Gender","Total", "Percent"))
   
-  income <- count(x, income) %>% mutate(income = ifelse(is.na(income), "Prefer not to say", parse_character(income))) %>%
-    mutate(percent = scales::percent(n/sum(n)),
-           n = scales::comma(n)) %>%
+  income <- x %>%
+    dplyr::count(Income) %>%
+    dplyr::mutate(Income = dplyr::case_when(is.na(as.character(Income)) ~'Missing', TRUE ~as.character(Income))) %>%
+    dplyr::mutate(percent = scales::percent(n/sum(n)),
+                  n = scales::comma(n))%>%
     magrittr::set_colnames(c("Income","Total", "Percent"))
   
   list_to_return <- list(states,region, age, gender, income)
@@ -44,10 +47,10 @@ create_appendix_and_map <- function(pollfish_file){
   
   ##Create map
   
-  my_map <- pollfishFunctions::create_map("appendix_file.xlsx")
+  my_map <-create_map("appendix_file.xlsx")
   my_map
-  ggsave("plot.png", width=12, height=8, dpi=300)
+  ggplot2::ggsave("plot.png", width=12, height=8, dpi=300)
   
   #Return list
-  return(list(states,region, age, gender, income))
+  #return(list(states,region, age, gender, income))
 }

@@ -10,30 +10,30 @@
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
 #' rank_question(x, "age", "Q8")
 
-
-rank_question <- function(d_frame, x_var, y_var){
+rank_question = function(d_frame, x_var, y_var){
+  x_var_sym = rlang::sym(x_var)
   
-  multiply_add_percent <- function(x){paste0(round(x*100,1),"%")}
+  #get percentage crosstab
+  df = d_frame %>% 
+    dplyr::select(!!x_var_sym, dplyr::matches(paste0(y_var,'.')))%>%
+    tidyr::drop_na() %>%
+    tidyr::gather(key = choice, value = answer, -!!x_var_sym) %>%
+    dplyr::filter(answer != 0) %>%
+    dplyr::group_by(!!x_var_sym, choice, answer) %>%
+    dplyr::tally()%>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(choice = stringr::str_extract(choice, pattern = '(?<=\\.)\\d*')) %>%
+    dplyr::group_by(!!x_var_sym, choice) %>%
+    dplyr::mutate(percent = n/sum(n)) %>%
+    dplyr::select(!!x_var_sym, choice, answer, percent)
   
-  var_1 <- enquo(x_var)
-  
-  p <- d_frame %>% select(!!var_1, contains(paste0(y_var,"."))) %>%
-    drop_na() %>% gather(choice, answer, -!!var_1) %>%
-    filter(answer != 0) %>%
-    group_by(!!sym(x_var),choice, answer) %>% tally()
-  
-  p <- p %>% ungroup() %>%
-    mutate(choice = parse_number(str_replace_all(choice, paste0(y_var,"."),""))) %>%
-    group_by(!!sym(x_var),choice) %>%
-    mutate(percent = n/sum(n))
-  
-  p <- p %>% select(!!var_1, choice,answer,percent)
-  
-  ##Create a list
-  my_levels <- p %>% pull(!!var_1) %>% unique() %>% parse_character()
-  
-  list_1 <- lapply(my_levels, function(i)filter(p,!!sym(x_var) == i) %>% ungroup() %>% select(-!!var_1))
-  list_1 <- lapply(list_1, function(i) i %>% spread(answer,percent) %>% mutate_at(vars(matches("[0-9]{1,3}")),~scales::percent(.,accuracy = 0.1)))
-  names(list_1) <- my_levels
-  return(list_1)
+  #creat list
+  level = df %>%
+    dplyr::pull(!!x_var_sym) %>%
+    unique()
+  #get crosstabs from list
+  list = purrr::map(level, function(i) df %>% dplyr::filter(!!x_var_sym == i) %>% dplyr::ungroup() %>% dplyr::select(-!!x_var_sym))
+  list = purrr::map(list, function(i) i %>% tidyr::spread(key = answer, value = percent) %>% dplyr::mutate_at(dplyr::vars(dplyr::matches("[0-9]{1,3}")), ~scales::percent(.,accuracy = 0.1)))
+  names(list) = level
+  return(list)
 }

@@ -9,14 +9,22 @@
 #' @examples
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
 #' multiple_choice <- c("Q2", "Q9")
-#' multiple_crosstabs_by_variable(x,"region", multiple_choice)
+#' multiple_crosstabs_by_variable(x,"Region", multiple_choice)
 
-multiple_crosstabs_by_variable <- function(d_frame1, x_var1, multiple_choice_columns){
+multiple_crosstabs_by_variable <- function(d_frame1, multiple_choice_columns){
   
-  z <- lapply(multiple_choice_columns, function(i)multiple_question(d_frame1,x_var1, i))
-  names(z) <- multiple_choice_columns
-
-  writexl::write_xlsx(z, paste0(x_var1, "_multiple_choice", ".xlsx"))
+  a = map(multiple_choice_columns, function(i)age_multiple_question(d_frame1, i))
+  b = map(multiple_choice_columns, function(i)income_multiple_question(d_frame1, i))
+  c = map(multiple_choice_columns, function(i)gender_multiple_question(d_frame1, i))
+  d = map(multiple_choice_columns, function(i)region_multiple_question(d_frame1, i))
   
-  return(z)
+  names(a) <- multiple_choice_columns
+  names(b) <- multiple_choice_columns
+  names(c) <- multiple_choice_columns
+  names(d) <- multiple_choice_columns
+  
+  writexl::write_xlsx(a, "age_multiple_choice", ".xlsx")
+  writexl::write_xlsx(b, "income_multiple_choice", ".xlsx")
+  writexl::write_xlsx(c, "gender_multiple_choice", ".xlsx")
+  writexl::write_xlsx(d, "region_multiple_choice", ".xlsx")
 }

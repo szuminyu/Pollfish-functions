@@ -7,8 +7,6 @@
 #' @examples
 #' read_pollfish_file("Pollfish_Survey.xls")
 
-
-
 read_pollfish_file = function(enter_file){
   
   ##This sheet contains income

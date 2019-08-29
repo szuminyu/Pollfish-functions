@@ -14,8 +14,7 @@
 #' single_choice <-c("Q1","Q3","Q4","Q5","Q6", "Q11")
 #' basic_survey_automation("Pollfish_Survey.xls",single_questions = single_choice,multiple_questions= multiple_choice,rank_questions = rank_choice)
 
-
-basic_survey_automation <- function(survey_file, single_questions = NULL,multiple_questions = NULL, rank_questions = NULL){
+basic_survey_automation = function(survey_file, single_questions = NULL,multiple_questions = NULL, rank_questions = NULL){
   
   ##Create folders and copy file
   lapply(c("single_questions", "multiple_questions", "rank_questions"), function(i){
@@ -25,7 +24,7 @@ basic_survey_automation <- function(survey_file, single_questions = NULL,multipl
   
   
   ##List of basic variables
-  basic_variables <- c("region", "gender", "age", "income")
+  basic_variables <- c("Region", "Gender", "Age", "Income")
   
   ##Write single questions
   if(is.null(single_questions)){
@@ -48,7 +47,7 @@ basic_survey_automation <- function(survey_file, single_questions = NULL,multipl
     
     retrieve_sample_and_questions(survey_file,multiple_questions,rank = FALSE, "multiple")
     x <- read_pollfish_file(survey_file)
-    lapply(basic_variables, function(i)multiple_crosstabs_by_variable(x,i,multiple_questions))
+    multiple_crosstabs_by_variable(x,multiple_questions)
     
     setwd("..//")
   }  
@@ -61,7 +60,7 @@ basic_survey_automation <- function(survey_file, single_questions = NULL,multipl
     
     retrieve_sample_and_questions(survey_file,rank_questions,rank = TRUE, "rank")
     
-    x <<- read_pollfish_file(survey_file)
+    x <- read_pollfish_file(survey_file)
     print("File read")
     lapply(c(basic_variables,"sample"), function(i)rank_whole_question(x,i,rank_questions))
     

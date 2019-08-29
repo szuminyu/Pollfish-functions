@@ -19,17 +19,19 @@ read_pollfish_file = function(enter_file){
   ##Fix income variable
   individuals = individuals %>% 
     dplyr::mutate(income = case_when(
-                  income %in% c("prefer_not_to_say") ~ NA_character_,
-                  income %in% c("lower_i", "lower_ii") ~ "Under 50K",
-                  TRUE ~ "Over 50K"))
+      income %in% c("prefer_not_to_say") ~ NA_character_,
+      income %in% c("lower_i", "lower_ii") ~ "Under 50K",
+      TRUE ~ "Over 50K"))
   
   ##This sheet contains regions
-  library(noncensus)
-  data('states')
+  data(states, package = 'noncensus')
   regions = states[, c('name','region')]
   
   ## Add Southwest category
   regions$region = as.character(regions$region)
+  regions$region[regions$name == 'Delaware'] = 'Northeast'
+  regions$region[regions$name == 'District of Columbia'] = 'Northeast'
+  regions$region[regions$name == 'Maryland'] = 'Northeast'
   regions$region[regions$name == 'Oklahoma'] = 'Southwest'
   regions$region[regions$name == 'Texas'] = 'Southwest'
   regions$region[regions$name == 'New Mexico'] = 'Southwest'
@@ -44,7 +46,7 @@ read_pollfish_file = function(enter_file){
   ##Order region, income
   individuals_coded = individuals_coded %>% 
     dplyr::mutate(income = factor(income, levels = c("Under 50K", "Over 50K")),
-           region = factor(region, levels = c("South", "Northeast", "Midwest", "West", "Southwest"))) %>%
+                  region = factor(region, levels = c("South", "Northeast", "Midwest", "West", "Southwest"))) %>%
     dplyr::rename(Income = income,
                   Region = region)
   
@@ -56,10 +58,10 @@ read_pollfish_file = function(enter_file){
     )) %>%
     dplyr::mutate(Age = factor(Age, levels = c("18 - 24", "25 - 34","35 - 44","45 - 54", "Over 54"))) %>%
     dplyr::mutate(Gender = str_to_title(Gender))
-
+  
   individuals_coded = individuals_coded %>% 
     dplyr::mutate(Sample = "Sample")
-    
+  
   return(individuals_coded)
-
+  
 }

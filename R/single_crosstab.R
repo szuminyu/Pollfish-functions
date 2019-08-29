@@ -8,24 +8,34 @@
 #' @export
 #' @examples
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
-#' single_crosstab(x, "age", "Q4")
+#' single_crosstab(x, "Age", "Q4")
 
 
 single_crosstab <- function(d_frame, x_var, y_var){
+  x_var_sym = rlang::sym(x_var)
+  y_var_sym = rlang::sym(y_var)
   
-  
-  zero_to_na <- function(x){ifelse(x == "0", NA,x)}
-  df <- d_frame %>%
-    select_(x_var, y_var) %>%
-    drop_na() %>%
-    filter_(paste(y_var, "!= 0")) %>%
-    group_by_(x_var, y_var)  %>%
-    tally() %>%
-    ungroup() %>%
-    group_by_(x_var) %>%
-    mutate(percent = n/sum(n)) %>%
-    select(-n) %>%
-    spread_(y_var, "percent") %>%
-    mutate_if(is_double, ~scales::percent(.,accuracy = .1))
+  df = d_frame %>%
+    #first select columns
+    dplyr::select(!! x_var_sym, !! y_var_sym)  %>%
+    #drop nas
+    tidyr::drop_na() %>%
+    #filter for answers not equal to 0
+    dplyr::filter(!!y_var_sym != 0) %>%
+    #group by columns
+    dplyr::group_by(!! x_var_sym, !! y_var_sym) %>%
+    #get calculations
+    dplyr::tally() %>%
+    dplyr::ungroup() %>%
+    #group by only main columns
+    dplyr::group_by(!! x_var_sym) %>%
+    #and calcuate the percentage
+    dplyr::mutate(percent = n/sum(n)) %>%
+    dplyr::select(-n) %>%
+    #spread it into crosstab
+    tidyr::spread(key = !!y_var_sym, value = percent) %>%
+    #add percentages
+    dplyr::mutate_if(is_double, ~scales::percent(., accuracy = .1))
   return(df)
+  
 }

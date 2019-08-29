@@ -9,25 +9,28 @@
 #' @examples
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
 #' rank_choice <- c("Q7","Q8")
-#' rank_whole_question(x,"region", rank_choice)
+#' rank_whole_question(x,"Region", rank_choice)
 
 
-rank_whole_question <- function(d_frame, x_var,rank_variables){
+rank_whole_question = function(d_frame, x_var,rank_variables){
   
-  var_1 <- enquo(x_var)
+  x_var_sym = rlang::sym(x_var)
   
-  retrieve_factors <- d_frame %>% 
-    select(!!var_1) %>% drop_na() %>%
-    pull(!!var_1) %>% unique() %>% parse_character()
+  #big toptics like age, gender, income, etc
+  topic = d_frame %>%
+    dplyr::select(!!x_var_sym) %>%
+    tidyr::drop_na() %>%
+    dplyr::pull(!!x_var_sym) %>%
+    unique()
   
-  l <- lapply(rank_variables,function(i)rank_question(x,x_var, i))
+  #categories under topics
+  category = purrr::map(rank_variables, function(i) rank_question(d_frame, x_var, i))
   
-  ##
-  lapply(retrieve_factors, function(i){
-    k <- map(l, i)
-    names(k) <- rank_variables
-    writexl::write_xlsx(k,paste0(str_to_lower(i),"_rank_questions.xlsx"))
+  #output excel
+  output = map(1:length(rank_variables), function(i){
+    map(1:length(topic), function(j){
+      result = purrr::pluck(category, i, topic[j])
+      xlsx::write.xlsx(as.data.frame(result), file = paste0(tolower(topic[j]),'_rank_questions.xlsx'), sheetName = rank_variables[i], row.names = FALSE, append = TRUE)
+    })
   })
-  
-  return(retrieve_factors) 
 }

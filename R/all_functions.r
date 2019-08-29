@@ -1,4 +1,7 @@
 ## Pollfish Functions by SM YU ##
+library(tidyverse)
+options(stringsAsFactors = FALSE)
+options(scipen = 999)
 
 #Read file - basic variables are upper case for the first letter
 read_pollfish_file = function(enter_file){
@@ -16,12 +19,14 @@ read_pollfish_file = function(enter_file){
       TRUE ~ "Over 50K"))
   
   ##This sheet contains regions
-  library(noncensus)
-  data('states')
+  data(states, package = 'noncensus')
   regions = states[, c('name','region')]
   
   ## Add Southwest category
   regions$region = as.character(regions$region)
+  regions$region[regions$name == 'Delaware'] = 'Northeast'
+  regions$region[regions$name == 'District of Columbia'] = 'Northeast'
+  regions$region[regions$name == 'Maryland'] = 'Northeast'
   regions$region[regions$name == 'Oklahoma'] = 'Southwest'
   regions$region[regions$name == 'Texas'] = 'Southwest'
   regions$region[regions$name == 'New Mexico'] = 'Southwest'
@@ -227,10 +232,10 @@ multiple_crosstabs_by_variable <- function(d_frame1, multiple_choice_columns){
   names(c) <- multiple_choice_columns
   names(d) <- multiple_choice_columns
   
-  writexl::write_xlsx(a, "age_multiple_choice", ".xlsx")
-  writexl::write_xlsx(b, "income_multiple_choice", ".xlsx")
-  writexl::write_xlsx(c, "gender_multiple_choice", ".xlsx")
-  writexl::write_xlsx(d, "region_multiple_choice", ".xlsx")
+  writexl::write_xlsx(a, "age_multiple_choice.xlsx")
+  writexl::write_xlsx(b, "income_multiple_choice.xlsx")
+  writexl::write_xlsx(c, "gender_multiple_choice.xlsx")
+  writexl::write_xlsx(d, "region_multiple_choice.xlsx")
 }
 
 #Ranks
@@ -285,41 +290,41 @@ rank_whole_question = function(d_frame, x_var,rank_variables){
 }
 
 
-#Get samples (from Harro)
+#Get samples (mostly from Harro)
 retrieve_sample_and_questions <- function(pollfish_file, column_names,rank=FALSE,prefix_for_file){
   
   ##Function to get rid of parentheses
-  remove_parentheses <- function(x){str_trim(str_remove_all(x,"\\(.*\\)"))}
+  remove_parentheses <- function(x){stringr::str_trim(stringr::str_remove_all(x,"\\(.*\\)"))}
   
   
   ##Sample totals
   work_sheets <- column_names
-  work_sheets <- unlist(str_extract_all(work_sheets, "Q[0-9]{1,2}.*"))
-  sample_answers <- lapply(work_sheets, function(i)read_excel(pollfish_file, sheet = i, skip = 1) %>%
-                             select(-matches("Respondents")) %>%
-                             rename_all(remove_parentheses))
+  work_sheets <- unlist(stringr::str_extract_all(work_sheets, "Q[0-9]{1,2}.*"))
+  sample_answers <- lapply(work_sheets, function(i)readxl::read_excel(pollfish_file, sheet = i, skip = 1) %>%
+                             dplyr::select(-matches("Respondents")) %>%
+                             dplyr::rename_all(remove_parentheses))
   
   if(rank == FALSE){
-    sample_answers <- lapply(sample_answers, function(i) i %>% mutate(row = row_number(),
+    sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers),
                                                                       Percent = scales::percent(Percent,accuracy = .1)) %>%
-                               select(-row))
+                                                                dplyr::select(-row))
     
   }else{
-    sample_answers <- lapply(sample_answers, function(i) i %>% mutate(row = row_number(),
+    sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers)) %>%
-                               select(-row))
+                                                                dplyr::select(-row))
   }
   names(sample_answers) <- column_names
   writexl::write_xlsx(sample_answers, paste0(prefix_for_file, "_sample_answers.xlsx"))
   
   ###
-  questions <- sapply(work_sheets, function(i)read_excel(pollfish_file, sheet = i) %>% 
-                        select(-matches("X__")) %>%
+  questions <- sapply(work_sheets, function(i)readxl::read_excel(pollfish_file, sheet = i) %>% 
+                        dplyr::select(matches('[a-zA-Z]')) %>%
                         colnames())
-  questions <- tibble(code = names(questions),
-                      text = rtweet::plain_tweets(questions)) %>%
-    mutate(text = paste0(code,". ",text))
+  
+  questions = dplyr::tibble(code = column_names, text = rtweet::plain_tweets(questions)) %>%
+    dplyr::mutate(text = paste0(code,". ",text))
   
   readr::write_csv(questions, paste0(prefix_for_file, "_text.csv"))
   
@@ -375,7 +380,7 @@ basic_survey_automation = function(survey_file, single_questions = NULL,multiple
     
     x <- read_pollfish_file(survey_file)
     print("File read")
-    lapply(c(basic_variables,"sample"), function(i)rank_whole_question(x,i,rank_questions))
+    lapply(c(basic_variables,"Sample"), function(i)rank_whole_question(x,i,rank_questions))
     
     setwd("..//")
   }  
@@ -383,3 +388,81 @@ basic_survey_automation = function(survey_file, single_questions = NULL,multiple
   ##
   print("Basic crosstabs created")
 }
+
+#Create appendix crosstab and map
+create_map <- function(appendix_file){
+  library(tidyverse);library(readxl);library(urbnmapr)
+  x <- read_excel(appendix_file, sheet = "states_for_map")
+  
+  
+  k <- urbnmapr::states %>%
+    inner_join(x, by = c("state_name" = "state")) %>%
+    ggplot(aes(long, lat, group = group, fill = region)) + 
+    geom_polygon(alpha =0.75, show.legend = FALSE, color = "gray30") + 
+    theme_minimal() + 
+    coord_map(projection = "albers", lat0 = 39, lat1 = 45) + 
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.y = element_blank(),
+          legend.text = element_text(size = 8),
+          text = element_text(face = "bold"),
+          legend.title = element_text(size =10)) + 
+    scale_fill_manual(values = c("royalblue3", "darkorange2", "firebrick2", "darkslategray3","forestgreen", "darkorchid3")) + 
+    guides(fill = guide_legend(title = "Region\n", title.position = "top", 
+                               title.hjust = 0.5)) + 
+    geom_text(data = urbnmapr::get_urbn_labels(map = "states") %>% inner_join(x, by = c("state_name" = "state")) %>%
+                mutate(for_label = ifelse(state_abbv %in% c("MD", "DE","NJ","CT","RI","MA","ME","NH","VT", "DC","HI","AK"),state_abbv, "")) %>%
+                mutate(label = ifelse(for_label == "",n, paste0(for_label,"-",n))), aes(x = long, lat, label = label), 
+              size = 3.9, inherit.aes = FALSE, fontface = "bold", color = "black")
+  
+  return(k)
+}
+create_appendix_and_map <- function(pollfish_file){
+  x <- read_pollfish_file(pollfish_file)
+  
+  
+  ##Worksheets for appendix file
+  states <- dplyr::count(x, Area, Region) %>%
+    dplyr::mutate(n = scales::comma(n)) %>%
+    magrittr::set_colnames(c("state","region", "n"))
+  
+  
+  region <- x %>%
+    dplyr::count(Region) %>%
+    dplyr::mutate(Region = dplyr::case_when(is.na(as.character(Region)) ~'Missing', TRUE ~as.character(Region))) %>%
+    dplyr::mutate(percent = scales::percent(n/sum(n)),
+                  n = scales::comma(n)) %>%
+    magrittr::set_colnames(c("Region","Total", "Percent"))
+  
+  age <- dplyr::count(x, Age) %>% 
+    dplyr::mutate(percent = scales::percent(n/sum(n)), n = scales::comma(n)) %>%
+    magrittr::set_colnames(c("Age","Total", "Percent"))
+  
+  gender <- dplyr::count(x, Gender) %>% 
+    dplyr::mutate(percent = scales::percent(n/sum(n)),n = scales::comma(n)) %>%
+    magrittr::set_colnames(c("Gender","Total", "Percent"))
+  
+  income <- x %>%
+    dplyr::count(Income) %>%
+    dplyr::mutate(Income = dplyr::case_when(is.na(as.character(Income)) ~'Missing', TRUE ~as.character(Income))) %>%
+    dplyr::mutate(percent = scales::percent(n/sum(n)),
+                  n = scales::comma(n))%>%
+    magrittr::set_colnames(c("Income","Total", "Percent"))
+  
+  list_to_return <- list(states,region, age, gender, income)
+  names(list_to_return) <- c("states_for_map","Region", "Age", "Gender", "Income")
+  writexl::write_xlsx(list_to_return, "appendix_file.xlsx")
+  
+  ##Create map
+  
+  my_map <-create_map("appendix_file.xlsx")
+  my_map
+  ggplot2::ggsave("plot.png", width=12, height=8, dpi=300)
+  
+  #Return list
+  #return(list(states,region, age, gender, income))
+}
+

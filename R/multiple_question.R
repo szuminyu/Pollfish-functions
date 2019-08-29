@@ -8,25 +8,136 @@
 #' @export
 #' @examples
 #' x <- read_pollfish_file("Pollfish_Survey.xls")
-#' multiple_question(x, "age", "Q2")
+#' multiple_question(x, "Age", "Q2")
 
 
-multiple_question <- function(d_frame, x_var, y_var){
+
+age_multiple_question <- function(dataframe, y_var){
+  y_var_sym = rlang::sym(y_var)
+  ## Get age category numbers
+  num = dataframe %>% group_by(Age) %>% tally()
   
-  multiply_add_percent <- function(x){paste0(round(x*100,1),"%")}
-  var_1 <- enquo(x_var)
   
-  p <- d_frame %>% select(!!var_1, contains(paste0(y_var,"."))) %>%
-    drop_na() %>% gather(choice, answer, -!!var_1) %>%
-    filter(answer == 1) %>%
-    group_by(!!sym(x_var),choice) %>% tally()
-  
-  p <- p %>% mutate(choice = parse_number(str_replace_all(choice, paste0(y_var,"."),""))) %>%
-    arrange(!!sym(x_var), choice) %>%
-    mutate(percent = n/sum(n)) %>%
-    select(-n)
-  
-  p <- p %>% spread(choice, percent) %>%
-    mutate_if(is_double, ~scales::percent(.,accuracy = .1))
-  return(p)
+  ##Get columns
+  df = dataframe %>% 
+    dplyr::select(Age, dplyr::matches(!!paste0(y_var,"\\."))) %>%
+    tidyr::gather(answer, value, -Age) %>%
+    dplyr::group_by(Age, answer, value) %>% 
+    dplyr::tally() %>%
+    dplyr::filter(value == 1) %>%
+    dplyr::select(-value)
+  ##Get Persentages
+  df = df %>%
+    dplyr::mutate(total_each = dplyr::case_when(
+      Age == "18 - 24" ~num[[1,2]],
+      Age == "25 - 34" ~num[[2,2]],
+      Age == "35 - 44" ~num[[3,2]],
+      Age == "45 - 54" ~num[[4,2]],
+      Age == "Over 54" ~num[[5,2]]
+    ))  %>%
+    dplyr::mutate(percent = n/total_each) %>%
+    dplyr::select(Age, answer, percent) %>%
+    tidyr::spread(key = answer, percent) %>%
+    dplyr::mutate_if(is_double, ~scales::percent(.,accuracy = .1)) %>%
+    dplyr::select_at(dplyr::vars(dplyr::matches('Q[1-9]\\.*')), function(i)stringr::str_extract(i, pattern = '(?<=\\.)\\d*'))  %>%
+    tidyr::drop_na()
+
+  return(df)
 }
+
+
+income_multiple_question <- function(dataframe, y_var){
+  y_var_sym = rlang::sym(y_var)
+  ## Get age category numbers
+  num = dataframe %>% group_by(Income) %>% tally()
+  
+  
+  ##Get columns
+  df = dataframe %>% 
+    dplyr::select(Income, dplyr::matches(!!paste0(y_var,"\\."))) %>%
+    tidyr::gather(answer, value, -Income) %>%
+    dplyr::group_by(Income, answer, value) %>% 
+    dplyr::tally() %>%
+    dplyr::filter(value == 1) %>%
+    dplyr::select(-value)
+  ##Get Persentages
+  df = df %>%
+    dplyr::mutate(total_each = dplyr::case_when(
+      Income == "Under 50K" ~num[[1,2]],
+      Income == "Over 50K" ~num[[2,2]],
+    ))  %>%
+    dplyr::mutate(percent = n/total_each) %>%
+    dplyr::select(Income, answer, percent) %>%
+    tidyr::spread(key = answer, percent) %>%
+    dplyr::mutate_if(is_double, ~scales::percent(.,accuracy = .1)) %>%
+    dplyr::select_at(dplyr::vars(dplyr::matches('Q[1-9]\\.*')), function(i)stringr::str_extract(i, pattern = '(?<=\\.)\\d*')) %>%
+    tidyr::drop_na()
+  
+  return(df)
+}
+
+
+gender_multiple_question <- function(dataframe, y_var){
+  y_var_sym = rlang::sym(y_var)
+  ## Get age category numbers
+  num = dataframe %>% group_by(Gender) %>% tally()
+  
+  
+  ##Get columns
+  df = dataframe %>% 
+    dplyr::select(Gender, dplyr::matches(!!paste0(y_var,"\\."))) %>%
+    tidyr::gather(answer, value, -Gender) %>%
+    dplyr::group_by(Gender, answer, value) %>% 
+    dplyr::tally() %>%
+    dplyr::filter(value == 1) %>%
+    dplyr::select(-value)
+  ##Get Persentages
+  df = df %>%
+    dplyr::mutate(total_each = dplyr::case_when(
+      Gender == "Female" ~num[[1,2]],
+      Gender == "Male" ~num[[2,2]],
+    ))  %>%
+    dplyr::mutate(percent = n/total_each) %>%
+    dplyr::select(Gender, answer, percent) %>%
+    tidyr::spread(key = answer, percent) %>%
+    dplyr::mutate_if(is_double, ~scales::percent(.,accuracy = .1)) %>%
+    dplyr::select_at(dplyr::vars(dplyr::matches('Q[1-9]\\.*')), function(i)stringr::str_extract(i, pattern = '(?<=\\.)\\d*')) %>%
+    tidyr::drop_na()
+  
+  return(df)
+}
+
+region_multiple_question <- function(dataframe, y_var){
+  y_var_sym = rlang::sym(y_var)
+  ## Get age category numbers
+  num = dataframe %>% group_by(Region) %>% tally()
+  
+  
+  ##Get columns
+  df = dataframe %>% 
+    dplyr::select(Region, dplyr::matches(!!paste0(y_var,"\\."))) %>%
+    tidyr::gather(answer, value, -Region) %>%
+    dplyr::group_by(Region, answer, value) %>% 
+    dplyr::tally() %>%
+    dplyr::filter(value == 1) %>%
+    dplyr::select(-value)
+  ##Get Persentages
+  df = df %>%
+    dplyr::mutate(total_each = dplyr::case_when(
+      Region == "South" ~num[[1,2]],
+      Region == "Northeast" ~num[[2,2]],
+      Region == "Midwest" ~num[[3,2]],
+      Region == 'West' ~num[[4,2]],
+      Region == 'Southwest'~num[[5,2]]
+    ))  %>%
+    dplyr::mutate(percent = n/total_each) %>%
+    dplyr::select(Region, answer, percent) %>%
+    tidyr::spread(key = answer, percent) %>%
+    dplyr::mutate_if(is_double, ~scales::percent(.,accuracy = .1)) %>%
+    dplyr::select_at(dplyr::vars(dplyr::matches('Q[1-9]\\.*')), function(i)stringr::str_extract(i, pattern = '(?<=\\.)\\d*')) %>%
+    tidyr::drop_na()
+  
+  return(df)
+}
+
+

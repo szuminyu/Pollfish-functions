@@ -26,17 +26,26 @@ retrieve_sample_and_questions <- function(pollfish_file, column_names,rank=FALSE
   ##Sample totals
   work_sheets <- column_names
   work_sheets <- unlist(stringr::str_extract_all(work_sheets, "Q[0-9]{1,2}.*"))
-  sample_answers <- lapply(work_sheets, function(i)readxl::read_excel(pollfish_file, sheet = i, skip = 1) %>%
-                             dplyr::select(-matches("Respondents")) %>%
-                             dplyr::rename_all(remove_parentheses))
+  
+  #update 12192019
   
   if(rank == FALSE){
+    
+    sample_answers = purrr::map(work_sheets, function(i){
+      df = readxl::read_excel(pollfish_file, sheet = i, skip = 1)
+      if (ncol(df) == 3) {
+        df = df %>% rename('Percent' = 'Answers(%)')
+      }
+      else {df = df %>% select(Answers,`Respondents(%)`, Count) %>% rename('Percent' = 'Respondents(%)')}
+    })
+    
     sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers),
                                                                       Percent = scales::percent(Percent,accuracy = .1)) %>%
                                                                 dplyr::select(-row))
     
   }else{
+    sample_answers = purrr::map(work_sheets, function(i) readxl::read_excel(pollfish_file, sheet = i, skip = 1))
     sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers)) %>%
                                                                 dplyr::select(-row))

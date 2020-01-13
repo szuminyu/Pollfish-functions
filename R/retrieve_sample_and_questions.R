@@ -33,7 +33,8 @@ retrieve_sample_and_questions <- function(pollfish_file, column_names,rank=FALSE
     
     sample_answers = purrr::map(work_sheets, function(i){
       df = readxl::read_excel(pollfish_file, sheet = i, skip = 1)
-      if (ncol(df) == 3) {
+      ## single choice questioins will have 5 columns; multiple choice questions will have more than 5
+      if (ncol(df) == 5) {
         df = df %>% rename('Percent' = 'Answers(%)')
       }
       else {df = df %>% select(Answers,`Respondents(%)`, Count) %>% rename('Percent' = 'Respondents(%)')}

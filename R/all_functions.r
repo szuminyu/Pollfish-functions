@@ -245,7 +245,7 @@ rank_question = function(d_frame, x_var, y_var){
   
   #get percentage crosstab
   df = d_frame %>% 
-    dplyr::select(!!x_var_sym, dplyr::matches(paste0(y_var,'.')))%>%
+    dplyr::select(!!x_var_sym, dplyr::matches(paste0(y_var,'\\.')))%>%
     tidyr::drop_na() %>%
     tidyr::gather(key = choice, value = answer, -!!x_var_sym) %>%
     dplyr::filter(answer != 0) %>%
@@ -276,7 +276,8 @@ rank_whole_question = function(d_frame, x_var,rank_variables){
     dplyr::select(!!x_var_sym) %>%
     tidyr::drop_na() %>%
     dplyr::pull(!!x_var_sym) %>%
-    unique()
+    unique() %>%
+    as.character()
   
   #categories under topics
   category = purrr::map(rank_variables, function(i) rank_question(d_frame, x_var, i))
@@ -301,17 +302,26 @@ retrieve_sample_and_questions <- function(pollfish_file, column_names,rank=FALSE
   ##Sample totals
   work_sheets <- column_names
   work_sheets <- unlist(stringr::str_extract_all(work_sheets, "Q[0-9]{1,2}.*"))
-  sample_answers <- lapply(work_sheets, function(i)readxl::read_excel(pollfish_file, sheet = i, skip = 1) %>%
-                             dplyr::select(-matches("Respondents")) %>%
-                             dplyr::rename_all(remove_parentheses))
+  
+  #update 12192019
   
   if(rank == FALSE){
+    
+    sample_answers = purrr::map(work_sheets, function(i){
+      df = readxl::read_excel(pollfish_file, sheet = i, skip = 1)
+      if (ncol(df) == 3) {
+        df = df %>% rename('Percent' = 'Answers(%)')
+      }
+      else {df = df %>% select(Answers,`Respondents(%)`, Count) %>% rename('Percent' = 'Respondents(%)')}
+    })
+    
     sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers),
                                                                       Percent = scales::percent(Percent,accuracy = .1)) %>%
                                                                 dplyr::select(-row))
     
   }else{
+    sample_answers = purrr::map(work_sheets, function(i) readxl::read_excel(pollfish_file, sheet = i, skip = 1))
     sample_answers <- lapply(sample_answers, function(i) i %>% dplyr::mutate(row = dplyr::row_number(),
                                                                       Answers = paste0(row,". ", Answers)) %>%
                                                                 dplyr::select(-row))
@@ -466,4 +476,3 @@ create_appendix_and_map <- function(pollfish_file){
   #Return list
   #return(list(states,region, age, gender, income))
 }
-
